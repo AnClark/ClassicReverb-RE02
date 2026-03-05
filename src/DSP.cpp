@@ -33,7 +33,8 @@ void ClassicReverb::updateCoeffs() {
     // note: earlyTapTimes are sample counts at 44.1kHz and need scaling by sample rate
     float preDelay = g_state.params[kPreDelay];
     float sampleRateRatio = g_state.sampleRate / 44100.0f;
-    int baseDelay = (int)(preDelay * 1000);
+    int baseDelay = (int)(preDelay * 1000 * sampleRateRatio);   // baseDelay should be scaled by sample rate as well:
+                                                                // preDelay(0-1) * 1000 samples (44.1kHz reference) * sample rate ratio 
     for (int i = 0; i < 7; i++) {
         int scaledTapTime = (int)(earlyTapTimes[i] * sampleRateRatio);
         g_state.earlyTapOffsets[i] = scaledTapTime + baseDelay;
