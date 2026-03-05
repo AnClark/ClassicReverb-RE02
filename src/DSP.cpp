@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#define NEW_LO_CUT_IMPLEMENTATION  // define this to use the corrected low-cut filter implementation based on analysis of Delphi code
+
 ClassicReverb::ClassicReverb(float sampleRate)
 {
     // initialization
@@ -115,6 +117,31 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     earlyR *= earlyMix;
     
     // low-cut filter (1st-order high-pass)
+#ifdef NEW_LO_CUT_IMPLEMENTATION
+    // Mended Low-cut implementation based on analysis of Delphi code, which uses a stateful 1st-order HPF instead of a simple RC filter
+    // Reported and fixed by Kimi Code.
+    
+    float loCut = g_state.params[kLoCut];
+    float loCutFreq = 20.0f + loCut * 980.0f;  // 20-1000Hz
+    // 1阶HP滤波器: y[n] = alpha * (y[n-1] + x[n] - x[n-1])
+    // loCutStateIn[2]: x[n-1]
+    // loCutStateOut[2]: y[n-1]
+    float alphaHP = loCutFreq / (loCutFreq + g_state.sampleRate);
+    
+    float newEarlyL = alphaHP * (g_state.loCutStateOut[0] + earlyL - g_state.loCutStateIn[0]);
+    float newEarlyR = alphaHP * (g_state.loCutStateOut[1] + earlyR - g_state.loCutStateIn[1]);
+    
+    g_state.loCutStateIn[0] = earlyL;
+    g_state.loCutStateIn[1] = earlyR;
+    g_state.loCutStateOut[0] = newEarlyL;
+    g_state.loCutStateOut[1] = newEarlyR;
+    
+    earlyL = newEarlyL;
+    earlyR = newEarlyR;
+#else
+    // Initial implementation by Kimi Code.
+    // Keep it for reference and back-up in case unexpected t
+
     float loCut = g_state.params[kLoCut];
     float loCutCoeff = 20.0f + loCut * 980.0f;  // 20-1000Hz
     float rc = 1.0f / (2.0f * 3.14159f * loCutCoeff);
@@ -124,6 +151,7 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     earlyR = alpha * (loCutState[1] + earlyR - earlyR);
     loCutState[0] = earlyL;
     loCutState[1] = earlyR;
+#endif
     
     // high-frequency damping filter (1st-order low-pass)
     float hiDamp = g_state.params[kHiDamp];

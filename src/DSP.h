@@ -39,6 +39,10 @@ struct ClassicReverbState {
     float feedbackCoeff;
     float dampingCoeff;
     float outputGain;
+
+    // Low-cut filter state
+    float loCutStateIn[2];
+    float loCutStateOut[2];
 };
 
 class ClassicReverb
