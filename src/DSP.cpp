@@ -184,29 +184,41 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
         combSumL += sample * combMixCoeffsL[i];
         combSumR += sample * combMixCoeffsR[i];
         
-        // feedback + damping
+        // feedback + damping (kDamping: general energy absorption LPF)
         float feedback = sample * g_state.feedbackCoeff + modOut;
         float damped = feedback * (1.0f - g_state.params[kDamping] * 0.5f) 
                       + g_state.combState[i][0] * (g_state.params[kDamping] * 0.5f);
         g_state.combState[i][0] = damped;
-        buffer[pos] = damped;
+
+        // Hi Damp LPF inside the feedback loop (kHiDamp: frequency-selective high-frequency absorption)
+        // combState[i][1] is the per-filter IIR state for this second LPF stage.
+        // Placing it here makes high frequencies decay FASTER than lows — the defining
+        // characteristic of "Hi Damp" in a room-acoustic reverb.
+        float hiDampCoeff = g_state.params[kHiDamp] * 0.5f;
+        float hiDamped = damped * (1.0f - hiDampCoeff) + g_state.combState[i][1] * hiDampCoeff;
+        g_state.combState[i][1] = hiDamped;
+        buffer[pos] = hiDamped;
         
         g_state.combWritePos[i]++;
         if (g_state.combWritePos[i] >= g_state.combSize[i]) 
             g_state.combWritePos[i] = 0;
     }
     
-    // 7. allpass diffusion (uses Hi Damp parameter)
+    // 7. Hi Damp filter on comb output (1st-order recursive IIR LPF)
+    // Matches the same pattern used for Hi Damp on early reflections:
+    //   y[n] = x[n] * (1 - coeff) + y[n-1] * coeff,  coeff = hiDamp * 0.5
+    // Bug fix: state must store OUTPUT (not input) to form the IIR feedback loop.
+    // Previously stored inApL (input), making this an FIR with negligible effect.
     float apL = combSumL;
     float apR = combSumR;
-    float apCoeff = g_state.params[kHiDamp];
+    float apCoeff = g_state.params[kHiDamp] * 0.5f;
     for (int stage = 0; stage < 2; stage++) {
         float inApL = apL;
         float inApR = apR;
-        apL = g_state.allpassState[stage*2] * (1.0f - apCoeff) + inApL * apCoeff;
-        apR = g_state.allpassState[stage*2+1] * (1.0f - apCoeff) + inApR * apCoeff;
-        g_state.allpassState[stage*2] = inApL;
-        g_state.allpassState[stage*2+1] = inApR;
+        apL = inApL * (1.0f - apCoeff) + g_state.allpassState[stage*2]   * apCoeff;
+        apR = inApR * (1.0f - apCoeff) + g_state.allpassState[stage*2+1] * apCoeff;
+        g_state.allpassState[stage*2]   = apL;   // store OUTPUT for recursive IIR
+        g_state.allpassState[stage*2+1] = apR;
     }
     
     // 8. pre-delay - key fix: decide which signal to delay based on PreDelay parameter
