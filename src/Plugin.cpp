@@ -31,6 +31,7 @@ void ClassicReverbPlugin::initParameter(uint32_t index, Parameter& parameter)
         parameter.ranges.min = 0.625f;
         parameter.ranges.max = 640.0f;
         parameter.ranges.def = 150.0f;  // 150.0 m2 equals 640.0 m2 of original plugin in audible experience
+        parameter.hints |= kParameterIsLogarithmic;
         parameter.unit = "m2";  // Square metre
         break;
     case kDamping:
