@@ -4,7 +4,9 @@
 #include <cstring>
 
 #define NEW_LO_CUT_IMPLEMENTATION  // define this to use the corrected low-cut filter implementation based on analysis of Delphi code
+#define FIX_LO_CUT_ALPHA             // define this to fix the inverted HPF alpha formula: fc/(fc+fs) silences the signal; correct formula is fs/(fs+fc)
 #define NEW_DAMPING_IMPLEMENTATION   // define this to fix kDamping not affecting reverb decay time (feedbackCoeff was never modulated by kDamping)
+#define NEW_EARLY_REFLECTION_IMPLEMENTATION  // define this to fix kEarlyReflection having no audible effect (early reflections were only fed into reverb network, never into the output)
 
 ClassicReverb::ClassicReverb(float sampleRate)
 {
@@ -125,7 +127,18 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     g_state.earlyWritePos = (g_state.earlyWritePos + 1) & 16383;
     
     // 4. early reflection EQ and mix
+#ifdef NEW_EARLY_REFLECTION_IMPLEMENTATION
+    // kEarlyReflection internal value is (dB + 40) / 46, mapping -40~+6 dB to 0~1.
+    // Apply proper dB-to-linear conversion so +6 dB actually boosts and 0 dB = unity.
+    // Special-case internal=0 as true silence (represents -inf dB floor).
+    float earlyMixInternal = g_state.params[kEarlyReflection];
+    float earlyMixDB = earlyMixInternal * 46.0f - 40.0f;  // convert 0-1 back to -40~+6 dB
+    float earlyMix = (earlyMixInternal < 0.001f) ? 0.0f : powf(10.0f, earlyMixDB / 20.0f);
+#else
+    // OLD: kEarlyReflection (0-1) used as a direct linear multiplier.
+    // Bug: +6 dB maps to internal=1.0 which gives 0 dB gain, not +6 dB.
     float earlyMix = g_state.params[kEarlyReflection];
+#endif
     earlyL *= earlyMix;
     earlyR *= earlyMix;
     
@@ -139,7 +152,17 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     // 1阶HP滤波器: y[n] = alpha * (y[n-1] + x[n] - x[n-1])
     // loCutStateIn[2]: x[n-1]
     // loCutStateOut[2]: y[n-1]
+#ifdef FIX_LO_CUT_ALPHA
+    // For a 1-pole HPF y[n] = alpha*(y[n-1] + x[n] - x[n-1]):
+    //   alpha = tau*fs / (1 + tau*fs)  where  tau = 1/(2*pi*fc)
+    //         ≈ fs / (fs + fc)   (simplified, accurate for fc << fs)
+    // Old formula fc/(fc+fs) gives alpha≈0.00045 at 20Hz/44.1kHz → -67 dB attenuation → earlyL≈0.
+    float alphaHP = g_state.sampleRate / (g_state.sampleRate + loCutFreq);
+#else
+    // BUG: fc/(fc+fs) is the LPF coefficient, not HPF. At fc=20Hz this equals ~0.00045,
+    // which silences the early reflection signal entirely.
     float alphaHP = loCutFreq / (loCutFreq + g_state.sampleRate);
+#endif
     
     float newEarlyL = alphaHP * (g_state.loCutStateOut[0] + earlyL - g_state.loCutStateIn[0]);
     float newEarlyR = alphaHP * (g_state.loCutStateOut[1] + earlyR - g_state.loCutStateIn[1]);
@@ -279,9 +302,18 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     float mix = g_state.params[kMix];
     float dryGain = 1.0f - mix;
     float wetGain = mix * g_state.params[kLevel] * 2.0f;  // Level parameter controls wet signal level
-    
+
+#ifdef NEW_EARLY_REFLECTION_IMPLEMENTATION
+    // Early reflections are mixed directly into the wet output alongside the late reverb.
+    // Previously they were only fed into modOut (reverb network input), where they became
+    // completely inaudible after being folded into 16 comb filter feedback loops.
+    // Adding them here makes kEarlyReflection directly audible.
+    *outL = dryL * dryGain + (wetL + earlyL) * wetGain;
+    *outR = dryR * dryGain + (wetR + earlyR) * wetGain;
+#else
     *outL = dryL * dryGain + wetL * wetGain;
     *outR = dryR * dryGain + wetR * wetGain;
+#endif
 }
 
 void ClassicReverb::processReplacing(const float** inputs, float** outputs, uint32_t sampleFrames)
