@@ -17,10 +17,10 @@
 #ifndef DISTRHO_PLUGIN_INFO_H_INCLUDED
 #define DISTRHO_PLUGIN_INFO_H_INCLUDED
 
-#define DISTRHO_PLUGIN_BRAND   "Kjaerhus Audio, AnClark Liu"
-#define DISTRHO_PLUGIN_NAME    "Classic Reverb"
-#define DISTRHO_PLUGIN_URI     "https://github.com/AnClark/ClassicReverb"
-#define DISTRHO_PLUGIN_CLAP_ID "kjaerhus.audio.classicreverb"
+#define DISTRHO_PLUGIN_BRAND   "AnClark Liu"
+#define DISTRHO_PLUGIN_NAME    "Classic Reverb RE-02"
+#define DISTRHO_PLUGIN_URI     "https://github.com/AnClark/ClassicReverb-RE02"
+#define DISTRHO_PLUGIN_CLAP_ID "studio.anclark.classic.reverb.re02"
 
 #define DISTRHO_PLUGIN_DESCRIPTION "Reverse-engineered plugin of Kjaerhus Audio Classic Reverb"
 #define DISTRHO_PLUGIN_LICENSE     "GPLv3+"
