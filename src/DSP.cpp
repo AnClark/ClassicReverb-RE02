@@ -4,6 +4,7 @@
 #include <cstring>
 
 #define NEW_LO_CUT_IMPLEMENTATION  // define this to use the corrected low-cut filter implementation based on analysis of Delphi code
+#define NEW_DAMPING_IMPLEMENTATION   // define this to fix kDamping not affecting reverb decay time (feedbackCoeff was never modulated by kDamping)
 
 ClassicReverb::ClassicReverb(float sampleRate)
 {
@@ -28,9 +29,21 @@ void ClassicReverb::updateCoeffs() {
     g_state.feedbackCoeff = 0.7f + roomSize * 0.25f;
     g_state.dampingCoeff = sqrtf(1.0f - g_state.feedbackCoeff * g_state.feedbackCoeff);
     
-    // Damping controls overall high-frequency attenuation
+    // Damping controls reverb decay time by reducing the effective feedback coefficient.
     float damping = g_state.params[kDamping];
-    
+
+#ifdef NEW_DAMPING_IMPLEMENTATION
+    // Repurpose dampingCoeff to store the effective (Damping-adjusted) feedback coefficient.
+    // Higher Damping → lower effectiveFeedback → each recirculation loses more energy → shorter tail.
+    // Scale factor 0.5: at Damping=0 → full feedbackCoeff; at Damping=1 → feedbackCoeff*0.5.
+    //   e.g. room 640m² (feedbackCoeff≈0.95): Damping=0%→RT60≈8s, Damping=60%→≈1.3s, Damping=100%→≈0.7s
+    g_state.dampingCoeff = g_state.feedbackCoeff * (1.0f - damping * 0.5f);
+#else
+    // OLD: dampingCoeff = sqrt(1 - feedback^2), computed but never used in processing.
+    // kDamping therefore had no effect on reverb decay time.
+    g_state.dampingCoeff = sqrtf(1.0f - g_state.feedbackCoeff * g_state.feedbackCoeff);
+#endif
+
     // calculate early reflection tap times (based on pre-delay)
     // note: earlyTapTimes are sample counts at 44.1kHz and need scaling by sample rate
     float preDelay = g_state.params[kPreDelay];
@@ -184,11 +197,19 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
         combSumL += sample * combMixCoeffsL[i];
         combSumR += sample * combMixCoeffsR[i];
         
-        // feedback + damping (kDamping: general energy absorption LPF)
+#ifdef NEW_DAMPING_IMPLEMENTATION
+        // Damping modulates effective feedback gain (controls reverb decay time / RT60).
+        // dampingCoeff = feedbackCoeff * (1 - kDamping * 0.5), pre-computed in updateCoeffs().
+        // combState[i][0] is no longer needed as a Damping-LPF state in this path.
+        float damped = sample * g_state.dampingCoeff + modOut;
+#else
+        // OLD: Damping applied as a 1-pole IIR LPF inside feedback.
+        // Bug: IIR LPF has unity DC gain, so the reverb decay time (RT60) is unaffected.
         float feedback = sample * g_state.feedbackCoeff + modOut;
-        float damped = feedback * (1.0f - g_state.params[kDamping] * 0.5f) 
+        float damped = feedback * (1.0f - g_state.params[kDamping] * 0.5f)
                       + g_state.combState[i][0] * (g_state.params[kDamping] * 0.5f);
         g_state.combState[i][0] = damped;
+#endif
 
         // Hi Damp LPF inside the feedback loop (kHiDamp: frequency-selective high-frequency absorption)
         // combState[i][1] is the per-filter IIR state for this second LPF stage.
