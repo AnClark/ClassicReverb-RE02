@@ -18,6 +18,10 @@ dpf_add_plugin (${PROJECT_NAME}
     FILES_UI
         src/UI.cpp
         src/UISubroutines.cpp
+        src/PresetManager.cpp
+        src/subwindows/PresetManagerWindow.cpp
+        src/subwindows/FileBrowserStuff.cpp
+        src/subwindows/MessageBoxStuff.cpp
         widgets/dpf-imgui/DearImGui.cpp
         widgets/imgui-knobs-mod/imgui-knobs.cpp
 )
@@ -30,6 +34,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     widgets/imgui-knobs-mod
     widgets/imgui-ext
     fonts
+    3rdparty
     ${PROJECT_BINARY_DIR}
 )
 

@@ -7,7 +7,7 @@
 // ------------------------------------------------------------------------------------------------------------
 
 ClassicReverbPlugin::ClassicReverbPlugin()
-    : Plugin(kNumParams, 0, 0)
+    : Plugin(kNumParams, 0, 3)  // 3 states: preset_name, preset_modified, preset_type
 {
     // Initialize DSP
     fReverb = std::make_unique<ClassicReverb>(getSampleRate());
@@ -20,6 +20,38 @@ ClassicReverbPlugin::ClassicReverbPlugin()
 /* ------------------------------------------------------------------
  * Init
  * ------------------------------------------------------------------ */
+
+void ClassicReverbPlugin::initState(uint32_t index, State& state)
+{
+    state.hints = kStateIsHostWritable;
+
+    switch (index)
+    {
+    case 0:
+        state.key          = "preset_name";
+        state.defaultValue = "";
+        state.label        = "Current Preset Name";
+        break;
+    case 1:
+        state.key          = "preset_modified";
+        state.defaultValue = "false";
+        state.label        = "Preset Modified";
+        break;
+    case 2:
+        state.key          = "preset_type";
+        state.defaultValue = "Factory";
+        state.label        = "Preset Type";
+        break;
+    default:
+        break;
+    }
+}
+
+void ClassicReverbPlugin::setState(const char* /*key*/, const char* /*value*/)
+{
+    // Preset state is managed by the UI; the DSP side does not need to act on it.
+    // DPF will forward state changes to the UI via stateChanged() automatically.
+}
 
 void ClassicReverbPlugin::initParameter(uint32_t index, Parameter& parameter)
 {
