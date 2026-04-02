@@ -24,14 +24,28 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 // ── Factory presets ────────────────────────────────────────────────────────
-// Name, RoomSize, Damping, PreDelay, HiDamp, LoCut, EarlyRef, Mix, Level
+// Name            RoomSize(m²)  Damp(%)  PreDelay(ms)  HiDamp(%)  LoCut(Hz)  EarlyRef(dB)  Mix(%)  Level(dB)
+//
+// Design notes:
+//   RoomSize   → feedbackCoeff = 0.7 + norm*0.25; also scales comb delay lengths
+//   Damping    → dampingCoeff  = feedbackCoeff * (1 - damp*0.5); controls overall RT60
+//   HiDamp     → per-comb LPF inside feedback; higher = progressively darker tail
+//   LoCut      → 1st-order HPF on reverb network input; removes low-end mud
+//   PreDelay>0 → delays wet signal so the attack stays clean before reverb arrives
+//   EarlyRef   → linear-in-dB early-reflection level mixed directly to output
 static const Preset kFactoryPresets[] = {
-    {"Grand Hall",      640.0f, 32.0f,  0.0f, 36.0f,  80.0f,  1.60f, 35.0f, 0.0f},
-    {"Small Room",       10.0f, 55.0f,  0.0f, 50.0f, 120.0f, -6.0f,  30.0f, 0.0f},
-    {"Cathedral",       500.0f, 15.0f, 20.0f, 20.0f,  60.0f,  0.0f,  40.0f, 0.0f},
-    {"Bright Chamber",   50.0f, 20.0f,  5.0f, 10.0f, 200.0f, -3.0f,  28.0f, 0.0f},
-    {"Warm Plate",       80.0f, 60.0f,  0.0f, 70.0f, 100.0f, -8.0f,  45.0f, 0.0f},
-    {"Long Ambience",   200.0f, 25.0f, 10.0f, 30.0f,  70.0f, -2.0f,  25.0f, 0.0f},
+    // Large reverberant spaces
+    {"Grand Hall",    520.0f,  22.0f,  22.0f,  32.0f,  55.0f,  1.0f,  30.0f, 0.0f},
+    {"Cathedral",     620.0f,  10.0f,  40.0f,  20.0f,  40.0f,  0.5f,  40.0f, 0.0f},
+    // Natural rooms
+    {"Recital Hall",  180.0f,  30.0f,  12.0f,  35.0f,  70.0f,  0.0f,  28.0f, 0.0f},
+    {"Small Room",     12.0f,  58.0f,   3.0f,  48.0f, 120.0f, -5.0f,  20.0f, 0.0f},
+    // Studio / production
+    {"Studio Plate",   55.0f,  36.0f,   6.0f,   8.0f, 220.0f, -2.0f,  36.0f, 0.0f},
+    {"Drum Room",      20.0f,  72.0f,   2.0f,  18.0f, 200.0f,  2.5f,  28.0f, 0.0f},
+    // Atmospheric
+    {"Warm Ambience", 160.0f,  28.0f,  15.0f,  65.0f,  50.0f, -8.0f,  25.0f, 0.0f},
+    {"Deep Space",    640.0f,   7.0f,  45.0f,  30.0f,  40.0f,-18.0f,  48.0f, 0.0f},
 };
 static constexpr int kFactoryPresetsCount = (int)(sizeof(kFactoryPresets) / sizeof(kFactoryPresets[0]));
 
