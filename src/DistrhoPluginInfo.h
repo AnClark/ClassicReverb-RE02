@@ -30,8 +30,12 @@
 #define DISTRHO_PLUGIN_NUM_INPUTS    2
 #define DISTRHO_PLUGIN_NUM_OUTPUTS   2
 
-//#define DISTRHO_PLUGIN_HAS_UI        1
-//#define DISTRHO_UI_DEFAULT_WIDTH     512
-//#define DISTRHO_UI_DEFAULT_HEIGHT    512
+#define DISTRHO_PLUGIN_HAS_UI              1
+#define DISTRHO_UI_USE_CUSTOM              1
+#define DISTRHO_UI_CUSTOM_INCLUDE_PATH     "DearImGui.hpp"
+#define DISTRHO_UI_CUSTOM_WIDGET_TYPE      DGL_NAMESPACE::ImGuiTopLevelWidget
+// Base width: 3 groups × (90×3, 90×2, 80×3 knobs) + spacing + right panel ≈ 864px
+#define DISTRHO_UI_DEFAULT_WIDTH           864
+#define DISTRHO_UI_DEFAULT_HEIGHT          120
 
 #endif // DISTRHO_PLUGIN_INFO_H_INCLUDED

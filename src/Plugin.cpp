@@ -24,64 +24,41 @@ ClassicReverbPlugin::ClassicReverbPlugin()
 void ClassicReverbPlugin::initParameter(uint32_t index, Parameter& parameter)
 {
     parameter.hints = kParameterIsAutomatable;
+    parameter.ranges = kParamRanges[index];
 
     switch (index) {
     case kRoomSize:
         parameter.name = "Room Size";
-        parameter.ranges.min = 0.625f;
-        parameter.ranges.max = 640.0f;
-        parameter.ranges.def = 150.0f;  // 150.0 m2 equals 640.0 m2 of original plugin in audible experience
         parameter.hints |= kParameterIsLogarithmic;
         parameter.unit = "m2";  // Square metre
         break;
     case kDamping:
         parameter.name = "Damping";
-        parameter.ranges.min = 0.0f;
-        parameter.ranges.max = 100.0f;
-        parameter.ranges.def = 30.0f;
         parameter.unit = "%";
         break;
     case kPreDelay:
         parameter.name = "Pre-delay";
-        parameter.ranges.min = -150.0f;
-        parameter.ranges.max = 150.0f;
-        parameter.ranges.def = 0.0f;
         parameter.unit = "ms";
         break;
     case kHiDamp:
         parameter.name = "Hi Damp";
-        parameter.ranges.min = 0.0f;
-        parameter.ranges.max = 100.0f;
-        parameter.ranges.def = 0.0f;
         parameter.unit = "%";
         break;
     case kLoCut:
         parameter.name = "Lo Cut";
-        parameter.ranges.min = 20.0f;
-        parameter.ranges.max = 1000.0f;
-        parameter.ranges.def = 20.0f;
         parameter.unit = "Hz";
         break;
     case kEarlyReflection:
         // FIXME: Early Reflection in original plugin is in Decibel (-∞ ~ 6.0 dB)
         parameter.name = "Early Reflection";
-        parameter.ranges.min = -40.0f;   // Represents -∞ dB
-        parameter.ranges.max = 6.0f;
-        parameter.ranges.def = 1.6f;
         parameter.unit = "dB";
         break;
     case kMix:
         parameter.name = "Mix";
-        parameter.ranges.min = 0.0f;
-        parameter.ranges.max = 100.0f;
-        parameter.ranges.def = 50.0f;
         parameter.unit = "%";
         break;
     case kLevel:
         parameter.name = "Level";
-        parameter.ranges.min = -10.0f;
-        parameter.ranges.max = 10.0f;
-        parameter.ranges.def = 0.0f;
         parameter.unit = "dB";
         break;
     }
