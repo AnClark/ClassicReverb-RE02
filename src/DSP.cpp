@@ -4,7 +4,8 @@
 #include <cstring>
 
 #define NEW_LO_CUT_IMPLEMENTATION  // define this to use the corrected low-cut filter implementation based on analysis of Delphi code
-#define FIX_LO_CUT_ALPHA             // define this to fix the inverted HPF alpha formula: fc/(fc+fs) silences the signal; correct formula is fs/(fs+fc)
+#define FIX_LO_CUT_2PI              // define this to fix the HPF alpha formula: original fc/(fc+fs) silenced signal; fs/(fs+fc) fixed sign but missed 2*pi; correct formula is fs/(fs+2*pi*fc)
+#define FIX_LO_CUT_TARGET           // define this to apply Lo Cut to modOut (reverb network input) instead of earlyL/earlyR only; fixes Lo Cut being nearly inaudible
 #define NEW_DAMPING_IMPLEMENTATION   // define this to fix kDamping not affecting reverb decay time (feedbackCoeff was never modulated by kDamping)
 #define NEW_EARLY_REFLECTION_IMPLEMENTATION  // define this to fix kEarlyReflection having no audible effect (early reflections were only fed into reverb network, never into the output)
 
@@ -152,18 +153,23 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     // 1阶HP滤波器: y[n] = alpha * (y[n-1] + x[n] - x[n-1])
     // loCutStateIn[2]: x[n-1]
     // loCutStateOut[2]: y[n-1]
-#ifdef FIX_LO_CUT_ALPHA
-    // For a 1-pole HPF y[n] = alpha*(y[n-1] + x[n] - x[n-1]):
-    //   alpha = tau*fs / (1 + tau*fs)  where  tau = 1/(2*pi*fc)
-    //         ≈ fs / (fs + fc)   (simplified, accurate for fc << fs)
-    // Old formula fc/(fc+fs) gives alpha≈0.00045 at 20Hz/44.1kHz → -67 dB attenuation → earlyL≈0.
-    float alphaHP = g_state.sampleRate / (g_state.sampleRate + loCutFreq);
+#ifdef FIX_LO_CUT_2PI
+    // Correct HPF coefficient: alpha = fs / (fs + 2*pi*fc), derived from tau = 1/(2*pi*fc).
+    // Original code had fc/(fc+fs) — the LPF formula — which gives alpha≈0.00045 at 20Hz/44.1kHz
+    // and silences the signal entirely (~-67 dB). Even after swapping numerator/denominator to
+    // fs/(fs+fc), the missing 2*pi factor shifted the actual cutoff down to fc/(2*pi)
+    // (e.g. UI 1000 Hz → actual ~159 Hz).
+    float alphaHP = g_state.sampleRate / (g_state.sampleRate + 2.0f * 3.14159265358979f * loCutFreq);
 #else
     // BUG: fc/(fc+fs) is the LPF coefficient, not HPF. At fc=20Hz this equals ~0.00045,
     // which silences the early reflection signal entirely.
     float alphaHP = loCutFreq / (loCutFreq + g_state.sampleRate);
 #endif
-    
+
+#ifndef FIX_LO_CUT_TARGET
+    // OLD: Lo Cut applied to earlyL/earlyR only.
+    // Bug: earlyL/earlyR are a tiny fraction of the wet output — Lo Cut is nearly inaudible.
+    // The main reverb tail (driven by mono -> modOut -> comb filters) is never filtered.
     float newEarlyL = alphaHP * (g_state.loCutStateOut[0] + earlyL - g_state.loCutStateIn[0]);
     float newEarlyR = alphaHP * (g_state.loCutStateOut[1] + earlyR - g_state.loCutStateIn[1]);
     
@@ -174,6 +180,7 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     
     earlyL = newEarlyL;
     earlyR = newEarlyR;
+#endif
 #else
     // Initial implementation by Kimi Code.
     // Keep it for reference and back-up in case unexpected t
@@ -199,6 +206,18 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     
     // 5. mix early reflections into mono signal
     float modOut = mono + (earlyL + earlyR) * 0.5f;
+
+#if defined(NEW_LO_CUT_IMPLEMENTATION) && defined(FIX_LO_CUT_TARGET)
+    // Apply Lo Cut HPF to modOut (the main reverb network input) so it cuts low frequencies
+    // from the full reverb tail. Previously Lo Cut only filtered earlyL/earlyR which are a
+    // small fraction of the wet output, making the parameter nearly inaudible.
+    // Uses loCutStateIn/Out[0] as mono state (index [1] unused in this single-channel path).
+    float filteredModOut = alphaHP * (g_state.loCutStateOut[0] + modOut - g_state.loCutStateIn[0]);
+    g_state.loCutStateIn[0] = modOut;
+    g_state.loCutStateOut[0] = filteredModOut;
+    modOut = filteredModOut;
+#endif
+
     for (int i = 0; i < 3; i++) {
         int readPos = g_state.modWritePos[i] - (600 + i * 170);
         if (readPos < 0) readPos += 4096;
