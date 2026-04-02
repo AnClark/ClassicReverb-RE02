@@ -30,6 +30,8 @@
 #define DISTRHO_PLUGIN_NUM_INPUTS    2
 #define DISTRHO_PLUGIN_NUM_OUTPUTS   2
 
+#define DISTRHO_PLUGIN_WANT_STATE    1
+
 #define DISTRHO_PLUGIN_HAS_UI              1
 #define DISTRHO_UI_USE_CUSTOM              1
 #define DISTRHO_UI_CUSTOM_INCLUDE_PATH     "DearImGui.hpp"
@@ -37,5 +39,9 @@
 // Base width: 3 groups × (90×3, 90×2, 80×3 knobs) + spacing + right panel ≈ 864px
 #define DISTRHO_UI_DEFAULT_WIDTH           864
 #define DISTRHO_UI_DEFAULT_HEIGHT          120
+
+// Global definitions for Classic Reverb plugin (not DPF-related)
+#define CLASSIC_REVERB_APPDATA_DIR_NAME "ClassicReverbRE02" // Subdirectory in user appdata folder
+#define CLASSIC_REVERB_PRESET_FILE_NAME "presets.json"      // Filename for storing user presets
 
 #endif // DISTRHO_PLUGIN_INFO_H_INCLUDED

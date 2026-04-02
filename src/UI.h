@@ -1,10 +1,14 @@
 #ifndef CLASSIC_REVERB_UI_H
 #define CLASSIC_REVERB_UI_H
 
-#include <cstring>
+#include <string>
+#include <queue>
+#include <mutex>
 
 #include "DistrhoUI.hpp"
+#include "FileBrowserDialog.hpp"  // DPF cross-platform file browser API
 #include "Definitions.h"
+#include "PresetManager.h"
 
 // Forward decls.
 namespace ImGuiKnobs_Mod {
@@ -25,6 +29,11 @@ protected:
     void parameterChanged(uint32_t index, float value) override;
 
     // -------------------------------------------------------------------
+    // State Callbacks (DPF WANT_STATE)
+
+    void stateChanged(const char* key, const char* value) override;
+
+    // -------------------------------------------------------------------
     // ImGui Callbacks
 
     void onImGuiDisplay() override;
@@ -38,6 +47,21 @@ private:
 
     bool fAboutWindowOpened;  // Flag to track if the "About" window is open
     int  fLastMouseCursor;    // To track the last mouse cursor state for optimization
+
+    // -------------------------------------------------------------------
+    // Preset Manager UI state
+
+    // Dialog mode enum (for modal popups inside the preset manager overlay)
+    enum class PmDialogMode { None, SaveNew, Rename, ConfirmDelete, ConfirmUpdate };
+
+    bool         fPresetManagerOpened = false;
+    PmDialogMode fPmDialogMode        = PmDialogMode::None;
+    char         fPmNameBuffer[128]   = {};   // text input for Save As / Rename dialogs
+
+    // Buffered values for atomic state restoration from stateChanged() callbacks
+    std::string fRestoredPresetType = "Factory";
+    std::string fRestoredPresetName;
+    bool        fRestoredModified   = false;
 
     // -------------------------------------------------------------------
     // Internal procedures
@@ -68,6 +92,44 @@ private:
     bool _BeginSection(const char* title, float width);
     void _EndSection();
     void _UpdateMouseCursor();
+
+    // Preset Manager related procedures
+    void _drawPresetManager();          // Draw the preset manager overlay window
+    void _applyRestoredPresetState();   // Restore preset context from buffered stateChanged() values
+
+    // -------------------------------------------------------------------
+    // Instances
+
+    ScopedPointer<PresetManager> fPresetManager;
+    friend class PresetManager;
+
+    // -------------------------------------------------------------------
+    // File browser stuff (DPF cross-platform native file dialog)
+
+    // Definitions & states
+    enum class FileBrowserAction { None, Import, Export };
+    DGL_NAMESPACE::FileBrowserHandle fFileBrowserHandle = nullptr;  // nullptr = no dialog open
+    FileBrowserAction                fFileBrowserAction = FileBrowserAction::None;
+
+    // Poll native file dialog each frame; process result when dialog closes
+    void _handleFileBrowserIdle();
+
+    // -------------------------------------------------------------------
+    // Message box stuff
+
+    // Definitions & states
+    std::queue<std::string> fMessageBoxQueue;    // Queue of messages to be shown in message boxes
+    bool                    fRequestMessagePopup = false;  // Trigger flag for message box display
+    std::mutex              fMessageQueueMutex;  // Mutex to protect access to the message box queue
+
+    // Poll message queue and show message box when needed.
+    void _handleMessageBoxIdle();
+    inline void _showMessageBox(const std::string& message)
+    {
+        std::lock_guard<std::mutex> lock(fMessageQueueMutex);
+        fMessageBoxQueue.push(message);
+        fRequestMessagePopup = true;
+    }
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ClassicReverbUI)
 };
