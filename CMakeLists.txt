@@ -6,12 +6,17 @@ project (ClassicReverb-RE02
     LANGUAGES C CXX
 )
 
+option (CONFIG_BUILD_JACK_STANDALONE "Build JACK standalone format (for debugging)")
+if (CONFIG_BUILD_JACK_STANDALONE)
+    set (TARGET_JACK jack)
+endif ()
+
 add_subdirectory (dpf)
 
 include_directories (src)
 
 dpf_add_plugin (${PROJECT_NAME}
-    TARGETS vst2 vst3 lv2 clap
+    TARGETS vst2 vst3 lv2 clap ${TARGET_JACK}
     FILES_DSP
         src/Plugin.cpp
         src/DSP.cpp
