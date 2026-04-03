@@ -8,6 +8,7 @@
 #define FIX_LO_CUT_TARGET           // define this to apply Lo Cut to modOut (reverb network input) instead of earlyL/earlyR only; fixes Lo Cut being nearly inaudible
 #define NEW_DAMPING_IMPLEMENTATION   // define this to fix kDamping not affecting reverb decay time (feedbackCoeff was never modulated by kDamping)
 #define NEW_EARLY_REFLECTION_IMPLEMENTATION  // define this to fix kEarlyReflection having no audible effect (early reflections were only fed into reverb network, never into the output)
+#define SOFT_CLIP_OUTPUT      // define this to apply tanh soft-clip to final output: y = C*tanh(x/C), ceiling +5 dBFS; undefine to bypass
 
 ClassicReverb::ClassicReverb(float sampleRate)
 {
@@ -327,11 +328,21 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     // Previously they were only fed into modOut (reverb network input), where they became
     // completely inaudible after being folded into 16 comb filter feedback loops.
     // Adding them here makes kEarlyReflection directly audible.
-    *outL = dryL * dryGain + (wetL + earlyL) * wetGain;
-    *outR = dryR * dryGain + (wetR + earlyR) * wetGain;
+    float rawL = dryL * dryGain + (wetL + earlyL) * wetGain;
+    float rawR = dryR * dryGain + (wetR + earlyR) * wetGain;
 #else
-    *outL = dryL * dryGain + wetL * wetGain;
-    *outR = dryR * dryGain + wetR * wetGain;
+    float rawL = dryL * dryGain + wetL * wetGain;
+    float rawR = dryR * dryGain + wetR * wetGain;
+#endif
+
+#ifdef SOFT_CLIP_OUTPUT
+    // tanh soft clip: y = C * tanh(x / C)
+    // Unity slope at x=0; knee ~0 dBFS; ceiling ±kSoftClipCeiling.
+    *outL = kSoftClipCeiling * std::tanh(rawL * kSoftClipCeilingInv);
+    *outR = kSoftClipCeiling * std::tanh(rawR * kSoftClipCeilingInv);
+#else
+    *outL = rawL;
+    *outR = rawR;
 #endif
 }
 

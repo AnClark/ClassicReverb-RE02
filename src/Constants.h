@@ -77,6 +77,13 @@ namespace ClassicReverbConsts {
     static const int MOD_DELAY_BUFFER_SIZE = 1024 * 4;          // modulation delay buffer
     static const int COMB_BUFFER_SIZE = 16384;       // comb filter buffer
     static const int PREDELAY_BUFFER_SIZE = 16384 * 4;          // predelay buffer
+
+    // Soft-clip ceiling: 10^(+5/20) ≈ 1.778 (+5 dBFS).
+    // Used by CLASSIC_REVERB_OUTPUT_SOFT_CLIP. Signals well below 0 dBFS pass
+    // through unaffected; peaks above 0 dBFS are progressively attenuated;
+    // hard asymptote at +5 dBFS.  Formula: y = C * tanh(x / C).
+    static constexpr float kSoftClipCeiling    = 1.77827941f;         // 10^(5/20)
+    static constexpr float kSoftClipCeilingInv = 1.0f / 1.77827941f; // precomputed reciprocal
 }
 
 #endif // CLASSIC_REVERB_CONSTANTS_H
