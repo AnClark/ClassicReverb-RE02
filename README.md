@@ -18,7 +18,8 @@ Years later, in 2026, I (AnClark Liu) decided to reverse engineer the Classic Re
 
 While Classic Reverb RE-02 has the same major features as its siblings ([RE-04](https://github.com/AnClark/ClassicReverb-RE04), [RE-03](https://github.com/AnClark/ClassicReverb-RE03)), it has its own features:
 
-- Wider and brighter sound image. This is much different from RE-04.
+- Wider and brighter sound image, with Less embrased sound field, which is similar to legendary plate reverb. This is much different from RE-04.
+- Gentle Hi Damp and Damping controls.
 - Shipped with a collection of factory presets that focusing on large spaces, natural rooms and production.
 
 ## How to Compile
@@ -43,6 +44,36 @@ To compile the Classic Reverb RE-02 plugin, you will need to have the following 
    ```
 
 3. The compiled plugin will be located in the `build/bin` directory.
+
+## Build Classic Reverb by Pipeline
+
+Classic Reverb RE-02 provided Makefiles, allowing you to build and pack Classic Reverb RE-02 in a pipeline. It resembles CI/CDs like GitHub Actions and Jenkins, but it has more convenience for building locally.
+
+### Native build for current platform
+
+Open a Unix-compatible environment (Msys2 on Windows, Bash on Linux), then run:
+
+```bash
+make
+```
+
+You will get a package file named as `build\ClassicReverb-RE04-{ARCH}-{OS}-{VERSION}-{GIT_COMMIT_ID}.zip`.
+
+> NOTICE:
+>
+> macOS is not supported yet in this Makefile, since I (AnClark) does not have a Mac and cannot test on macOS. Feel free to submit a PR if you could give me a hand!
+
+### Cross-build for Windows on Linux / macOS
+
+Another Makefile `Makefile.win32_cross.mk` is for cross-compiling RE-02 for Windows on Linux or macOS. Simply run:
+
+```
+make -f Makefile.win32_cross.mk
+```
+
+### Dependency check
+
+Makefiles will inform you if you miss some dependencies. Look into source files to figure out what you should install.
 
 ## Tools used
 
