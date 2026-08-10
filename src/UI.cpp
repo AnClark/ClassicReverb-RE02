@@ -103,8 +103,11 @@ static const ImGuiKnobs_Mod::KnobScaleMark kLevelMarks[] = {
 // Constructor and UI callbacks
 
 ClassicReverbUI::ClassicReverbUI()
-    : DISTRHO::UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT, true)
+    : DISTRHO::UI(DISTRHO_UI_DEFAULT_WIDTH, DISTRHO_UI_DEFAULT_HEIGHT)
 {
+    // Fetch current scale factor
+    this->fScaleFactor = getScaleFactor();
+
     std::memset(fParams, 0, sizeof(fParams));
 
     fAboutWindowOpened = false;
@@ -135,7 +138,7 @@ void ClassicReverbUI::parameterChanged(uint32_t index, float value)
 
 void ClassicReverbUI::onImGuiDisplay()
 {
-    const float margin = 4.0f;
+    const float margin = SCALE(4.0f);
 
     // ── Main viewport (fullscreen, no decoration) ────────────────────────
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -151,7 +154,7 @@ void ClassicReverbUI::onImGuiDisplay()
 
     if (ImGui::Begin("Main Window", nullptr, window_flags))
     {
-        const float  rounding = 10.0f;
+        const float  rounding = SCALE(10.0f);
         const ImVec2 winSize  = ImGui::GetWindowSize();
 
         _drawChassisBackground(margin, rounding);
@@ -167,72 +170,72 @@ void ClassicReverbUI::onImGuiDisplay()
                               ImGuiWindowFlags_NoScrollWithMouse))
         {
             // Left margin
-            ImGui::Dummy(ImVec2(2, 0));
+            ImGui::Dummy(ImVec2(SCALE(2), 0));
             ImGui::SameLine();
 
             // ── REVERBERATION ────────────────────────────────────────────
-            if (_BeginSection("REVERBERATION", (90.0f - 4.0f) * 3))
+            if (_BeginSection("REVERBERATION", SCALE((90.0f - 4.0f) * 3)))
             {
-                ImGui::Dummy(ImVec2(12, 0));
+                ImGui::Dummy(ImVec2(SCALE(12), 0));
                 ImGui::SameLine();
 
                 _addKnob(kRoomSize,  "SIZE (m\xc2\xb2)", kSizeMarks,     IM_ARRAYSIZE(kSizeMarks), true);
-                ImGui::SameLine(0, 35);
+                ImGui::SameLine(0, SCALE(35));
                 _addKnob(kDamping,   "DAMPING",        kDampingMarks,  IM_ARRAYSIZE(kDampingMarks));
-                ImGui::SameLine(0, 35);
+                ImGui::SameLine(0, SCALE(35));
                 _addKnob(kPreDelay,  "PREDELAY (ms)",  kPreDelayMarks, IM_ARRAYSIZE(kPreDelayMarks));
 
                 _EndSection();
             }
 
-            ImGui::SameLine(0, 10);
+            ImGui::SameLine(0, SCALE(10));
 
             // ── FILTERS ──────────────────────────────────────────────────
-            if (_BeginSection("FILTERS", (90.0f - 6.0f) * 2))
+            if (_BeginSection("FILTERS", SCALE((90.0f - 6.0f) * 2)))
             {
-                ImGui::Dummy(ImVec2(2, 0));
+                ImGui::Dummy(ImVec2(SCALE(2), 0));
                 ImGui::SameLine();
 
                 _addKnob(kHiDamp, "HI DAMP.", kDampingMarks, IM_ARRAYSIZE(kDampingMarks));
-                ImGui::SameLine(0, 35);
+                ImGui::SameLine(0, SCALE(35));
                 _addKnob(kLoCut,  "LO CUT (Hz)", kLoCutMarks, IM_ARRAYSIZE(kLoCutMarks), true);
 
                 _EndSection();
             }
 
-            ImGui::SameLine(0, 10);
+            ImGui::SameLine(0, SCALE(10));
 
             // ── OUTPUT ───────────────────────────────────────────────────
-            if (_BeginSection("OUTPUT", (80.0f - 2.0f) * 3))
+            if (_BeginSection("OUTPUT", SCALE((80.0f - 2.0f) * 3)))
             {
-                ImGui::Dummy(ImVec2(1, 0));
+                ImGui::Dummy(ImVec2(SCALE(1), 0));
                 ImGui::SameLine();
 
                 _addKnob(kEarlyReflection, "EARLY REF. (dB)", kEarlyRefMarks, IM_ARRAYSIZE(kEarlyRefMarks),
                          false, true, 0.0f);
-                ImGui::SameLine(0, 15);
+                ImGui::SameLine(0, SCALE(15));
                 _addKnob(kMix,   "MIX",   kMixMarks,   IM_ARRAYSIZE(kMixMarks));
-                ImGui::SameLine(0, 30);
+                ImGui::SameLine(0, SCALE(30));
                 _addKnob(kLevel, "LEVEL",  kLevelMarks, IM_ARRAYSIZE(kLevelMarks));
 
                 _EndSection();
             }
 
-            ImGui::SameLine(0, 10.0f);
+            ImGui::SameLine(0, SCALE(10.0f));
 
             // ── Right panel (logo + plugin name) ─────────────────────────
             {
                 ImGui::BeginGroup();
 
-                ImGui::Dummy(ImVec2(0, 2));
-                _drawKjaerhusLogo(ImVec2(100, 50));
+                ImGui::Dummy(ImVec2(0, SCALE(2)));
+                _drawKjaerhusLogo(ImVec2(SCALE(100), SCALE(50)));
 
                 // Preset button — label shows the current preset name
                 {
                     ImGui::BeginGroup();
                     ImGui::AlignTextToFramePadding();
 
-                    ImGui::Dummy(ImVec2(2, 0));
+                    ImGui::Dummy(ImVec2(SCALE(2), 0));
                     ImGui::SameLine(0.0f, 0.0f);
 
                     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);  // Smaller font for the preset button
@@ -248,13 +251,13 @@ void ClassicReverbUI::onImGuiDisplay()
                         }
                         btnLabel += "##Preset";
                         if (ImGuiExt::HardwareButton(btnLabel.c_str(),
-                                           ImVec2(100 - 3, ImGui::GetFrameHeight()),
+                                           ImVec2(SCALE(100 - 3), ImGui::GetFrameHeight()),
                                            ImVec4(0x2f / 255.0f, 0x4d / 255.0f, 0x44 / 255.0f, 1.0f)))
                         {
                             fPresetManagerOpened = !fPresetManagerOpened;
                         }
                     }
-                    ImGui::SameLine(0.0f, 5.0f);
+                    ImGui::SameLine(0.0f, SCALE(5.0f));
                     ImGui::Text("PRESET");
 
                     ImGui::PopFont();
@@ -262,7 +265,7 @@ void ClassicReverbUI::onImGuiDisplay()
                     ImGui::EndGroup();
                 }
 
-                ImGui::Dummy(ImVec2(0, 0.5f));
+                ImGui::Dummy(ImVec2(0, SCALE(0.5f)));
 
                 _drawPluginName();
 
@@ -293,8 +296,8 @@ void ClassicReverbUI::onImGuiDisplay()
         {
             {
                 ImGui::Columns(2, "AboutColumns", false);
-                ImGui::SetColumnWidth(0, 400.0f - 5.0f);
-                ImGui::SetColumnWidth(1, 420.0f - 15.0f);
+                ImGui::SetColumnWidth(0, SCALE(400.0f - 5.0f));
+                ImGui::SetColumnWidth(1, SCALE(420.0f - 15.0f));
 
                 {
                     const String versionStr = String("Classic Reverb RE-02") + "  |  Version " +
@@ -306,7 +309,7 @@ void ClassicReverbUI::onImGuiDisplay()
                     ImGui::Text("Copyright (c) 2026 AnClark Liu <clarklaw4701@qq.com>");
 
                     ImGui::SeparatorText("License: GNU General Public License v3.0 or later");
-                    ImGui::Dummy(ImVec2(0, 2));
+                    ImGui::Dummy(ImVec2(0, SCALE(2)));
                     ImGui::TextWrapped("Classic Reverb RE-02 is free software: "
                         "you can redistribute it and/or modify it under the terms of the "
                         "GNU General Public License as published by the Free Software Foundation, "
@@ -322,10 +325,10 @@ void ClassicReverbUI::onImGuiDisplay()
                         "to life again.");
                     ImGui::TextWrapped("This project is NOT related to official Kjaerhus Audio, "
                         "Acoustica LLC. and their affiliates.");
-                    ImGui::Dummy(ImVec2(0, 2));
+                    ImGui::Dummy(ImVec2(0, SCALE(2)));
                     ImGui::TextWrapped("The Kjaerhus logo is used under fair use for identification "
                         "purposes only, and is not intended to infringe any trademarks.");
-                    ImGui::Dummy(ImVec2(0, 2));
+                    ImGui::Dummy(ImVec2(0, SCALE(2)));
                     ImGui::TextWrapped("VST is a trademark of Steinberg GmbH.");
                 }
 
@@ -333,7 +336,7 @@ void ClassicReverbUI::onImGuiDisplay()
             }
 
             {
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, SCALE(5.0f));
                 ImGui::PushStyleColor(ImGuiCol_Button,
                     IM_COL32(0x2f, 0x4d, 0x44, 0xff));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,
@@ -341,10 +344,10 @@ void ClassicReverbUI::onImGuiDisplay()
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
                     IM_COL32(0x2f + 40, 0x4d + 40, 0x44 + 40, 0xff));
 
-                static constexpr ImVec2 kBtnSize = ImVec2(60 - 5, 25);
+                static const ImVec2 kBtnSize = ImVec2(SCALE(60 - 5), SCALE(25));
                 ImVec2 btnPos = ImVec2(
-                    viewport->Pos.x + viewport->Size.x - kBtnSize.x - 22.0f,
-                    viewport->Pos.y + viewport->Size.y - kBtnSize.y - 10.0f);
+                    viewport->Pos.x + viewport->Size.x - kBtnSize.x - SCALE(22.0f),
+                    viewport->Pos.y + viewport->Size.y - kBtnSize.y - SCALE(10.0f));
                 ImGui::SetCursorScreenPos(btnPos);
                 if (ImGui::Button("OK", kBtnSize))
                     fAboutWindowOpened = false;

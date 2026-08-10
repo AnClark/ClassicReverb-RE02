@@ -10,13 +10,15 @@
 #include "../fonts/FontAwesome5.hpp"
 #include "../fonts/IconFontAwesome5.h"
 
+static constexpr float kScaleMarkInitFontSize = 12.5f;
+
 // -----------------------------------------------------------------------
 // Scale-mark style (shared across knobs)
 
 ImGuiKnobs_Mod::KnobScaleMarkStyle kScaleMarkStyle = {
     .outer_radius = 1.20f,
     .tick_length  = 0.50f,
-    .font_size    = 12.5f,
+    .font_size    = kScaleMarkInitFontSize,
 };
 
 // -----------------------------------------------------------------------
@@ -95,6 +97,9 @@ void ClassicReverbUI::_loadFonts()
 
     // Tell the knob widget to use the oversized font for scale marks
     kScaleMarkStyle.custom_font = io.Fonts->Fonts[2];
+
+    // Remember to scale the scale mark font's size to screen DPI
+    kScaleMarkStyle.font_size = kScaleMarkInitFontSize * getScaleFactor();
 }
 
 // -----------------------------------------------------------------------
@@ -112,7 +117,7 @@ void ClassicReverbUI::_drawChassisBackground(float margin, float rounding)
 
     // Soft drop-shadow (upper-left light source → shadow falls to bottom-right)
     static constexpr int   kShadowLayers = 6;
-    static constexpr float kShadowMax    = 9.0f;
+    static const float     kShadowMax    = SCALE(9.0f);
     for (int i = kShadowLayers; i >= 1; --i)
     {
         const float frac   = static_cast<float>(i) / kShadowLayers;
@@ -148,12 +153,12 @@ void ClassicReverbUI::_drawKjaerhusLogo(const ImVec2& size)
 
     // Triangle (concave Bezier) layered behind the text
     {
-        const float llen            = 40.0f;
-        const float height          = 35.0f;
-        const ImVec2 p1 = ImVec2(pos.x + 72.0f, pos.y - 1.0f);
+        const float llen            = SCALE(40.0f);
+        const float height          = SCALE(35.0f);
+        const ImVec2 p1 = ImVec2(pos.x + SCALE(72.0f), pos.y - SCALE(1.0f));
         const ImVec2 p2 = ImVec2(p1.x, p1.y + llen);
         const ImVec2 p3 = ImVec2(p1.x + height, p1.y + llen * 0.5f);
-        const float  ci = 10.0f;
+        const float  ci = SCALE(10.0f);
 
         const ImVec2 ctrl_top = ImVec2((p1.x + p3.x) * 0.5f, (p1.y + p3.y) * 0.5f + ci);
         const ImVec2 ctrl_bot = ImVec2((p3.x + p2.x) * 0.5f, (p3.y + p2.y) * 0.5f - ci);
@@ -166,24 +171,24 @@ void ClassicReverbUI::_drawKjaerhusLogo(const ImVec2& size)
     }
 
     // "KJÆRHUS AUDIO" text
-    ImGuiExt::AddTextScaled(dl, ImGui::GetIO().Fonts->Fonts[2], 20.0f,
-        ImVec2(pos.x + 10.0f, pos.y + 8.0f),
+    ImGuiExt::AddTextScaled(dl, ImGui::GetIO().Fonts->Fonts[2], SCALE(20.0f),
+        ImVec2(pos.x + SCALE(10.0f), pos.y + SCALE(8.0f)),
         IM_COL32(255, 255, 255, 255),
         "KJÆRHUS AUDIO", 0.65f, 1.0f);
 
     // "Recreated by AnClark" badge
     {
         const char*    info_text   = "Recreated by AnClark";
-        constexpr float kFontSz    = 16.0f;
-        constexpr float kScaleX    = 0.8f;
-        constexpr float kScaleY    = 0.8f;
-        constexpr float kPadX      = 8.0f;
-        constexpr float kPadY      = 1.0f;
-        constexpr float kRound     = 3.0f;
+        const float kFontSz    = SCALE(16.0f);
+        const float kScaleX    = 0.8f;
+        const float kScaleY    = 0.8f;
+        const float kPadX      = SCALE(8.0f);
+        const float kPadY      = SCALE(1.0f);
+        const float kRound     = SCALE(3.0f);
         constexpr ImU32 kBgColor   = IM_COL32(100, 100, 100, 60);
 
         ImFont*       font     = ImGui::GetIO().Fonts->Fonts[2];
-        const ImVec2  text_pos = ImVec2(pos.x + 10.0f, pos.y + 8.0f + 22.0f);
+        const ImVec2  text_pos = ImVec2(pos.x + SCALE(10.0f), pos.y + SCALE(8.0f + 22.0f));
         const ImVec2  raw_sz   = font->CalcTextSizeA(kFontSz, FLT_MAX, 0.0f, info_text);
         const ImVec2  text_sz  = ImVec2(raw_sz.x * kScaleX, raw_sz.y * kScaleY);
 
@@ -207,7 +212,7 @@ void ClassicReverbUI::_drawPluginName()
     // "Classic Reverb" logotype
     ImGui::AlignTextToFramePadding();
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[3]);
-    ImGui::Dummy(ImVec2(0, 2));
+    ImGui::Dummy(ImVec2(0, SCALE(2)));
     ImGui::SameLine();
     ImGui::Text("Classic Reverb");
     ImGui::PopFont();
@@ -218,10 +223,10 @@ void ClassicReverbUI::_drawPluginName()
     {
         ImDrawList*     dl      = ImGui::GetWindowDrawList();
         ImFont*         font    = ImGui::GetIO().Fonts->Fonts[2];
-        constexpr float kFontSz = 12.5f;
-        constexpr float kPadX   = 3.0f;
-        constexpr float kPadY   = 2.0f;
-        constexpr float kRound  = 4.0f;
+        const float     kFontSz = SCALE(12.5f);
+        const float     kPadX   = SCALE(3.0f);
+        const float     kPadY   = SCALE(2.0f);
+        const float     kRound  = SCALE(4.0f);
 
         const ImVec2 re_sz  = font->CalcTextSizeA(kFontSz, FLT_MAX, 0.0f, "RE");
         const ImVec2 o2_sz  = font->CalcTextSizeA(kFontSz, FLT_MAX, 0.0f, "02");
@@ -230,7 +235,7 @@ void ClassicReverbUI::_drawPluginName()
         const float  rw     = o2_sz.x + kPadX * 2.0f;
 
         const ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-        const ImVec2 p0  = ImVec2(cursor_pos.x, cursor_pos.y + 4.0f);
+        const ImVec2 p0  = ImVec2(cursor_pos.x, cursor_pos.y + SCALE(4.0f));
         const ImVec2 mid = ImVec2(p0.x + lw,      p0.y);
         const ImVec2 p1  = ImVec2(p0.x + lw + rw, p0.y + height);
 
@@ -264,8 +269,8 @@ void ClassicReverbUI::_addKnob(
     const ImGuiKnobs_Mod::KnobScaleMark* marks, uint32_t mark_count,
     bool isLogarithmic, bool use_pivot, float pivot_value)
 {
-    constexpr float kKnobSize  = 50.0f;
-    constexpr int   kStepCount = 10;
+    const float   kKnobSize  = SCALE(50.0f);
+    constexpr int kStepCount = 10;
 
     constexpr float kPi       = 3.14159265358979323846f;
     constexpr float kAngleMin = kPi * (130.0f / 180.0f);
@@ -314,7 +319,7 @@ bool ClassicReverbUI::_BeginSection(const char* title, float width)
     ImGui::PopFont();
 
     // Gap between title and knobs – prevents scale marks from overlapping
-    ImGui::Dummy(ImVec2(0, 8));
+    ImGui::Dummy(ImVec2(0, SCALE(8)));
 
     return true;
 }
