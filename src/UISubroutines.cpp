@@ -170,15 +170,15 @@ void ClassicReverbUI::_drawKjaerhusLogo(const ImVec2& size)
         dl->PathFillConcave(IM_COL32(255, 255, 255, 60));
     }
 
-    // "KJÆRHUS AUDIO" text
+    // "ANCLARK STUDIO" text
     ImGuiExt::AddTextScaled(dl, ImGui::GetIO().Fonts->Fonts[2], SCALE(20.0f),
         ImVec2(pos.x + SCALE(10.0f), pos.y + SCALE(8.0f)),
         IM_COL32(255, 255, 255, 255),
-        "KJÆRHUS AUDIO", 0.65f, 1.0f);
+        "ANCLARK STUDIO", 0.65f, 1.0f);
 
-    // "Recreated by AnClark" badge
+    // "Classic Series Reborn" badge
     {
-        const char*    info_text   = "Recreated by AnClark";
+        const char*    info_text   = "Classic Series Reborn";
         const float kFontSz    = SCALE(16.0f);
         const float kScaleX    = 0.8f;
         const float kScaleY    = 0.8f;
