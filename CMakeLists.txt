@@ -2,9 +2,15 @@ cmake_minimum_required (VERSION 3.20)
 
 project (ClassicReverb-RE02
     VERSION 1.1.1
-    DESCRIPTION "Reverse-engineered plugin of Kjaerhus Audio Classic Reverb"
+    DESCRIPTION "Classic Reverb RE-02 audio plugin"
     LANGUAGES C CXX
 )
+
+# Metadata for CPack
+set (AUTHOR "AnClark Liu")
+set (INSTALL_DIRECTORY ${PROJECT_NAME})
+set (ICON_PATH "${PROJECT_SOURCE_DIR}/Screenshot.png")
+set (PRODUCTBUILD_IDENTIFIER "com.anclark.classicreverb.re02")
 
 option (CONFIG_BUILD_JACK_STANDALONE "Build JACK standalone format (for debugging)")
 if (CONFIG_BUILD_JACK_STANDALONE)
@@ -51,6 +57,9 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # Generate config.h from config.h.in
 configure_file(src/config.h.in ${PROJECT_BINARY_DIR}/config.h @ONLY)
+
+# Packaging rules
+include ("${PROJECT_SOURCE_DIR}/cmake/Packaging.cmake")
 
 # Compiler warnings
 if(MSVC)
