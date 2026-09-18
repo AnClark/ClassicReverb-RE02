@@ -19,7 +19,12 @@ endif ()
 
 add_subdirectory (dpf)
 
-include_directories (src)
+# Fonts
+set (FONT_FILES
+    fonts/LiberationSans-Regular.cpp
+    fonts/CormorantFont.cpp
+    fonts/FontAwesome5.cpp
+)
 
 dpf_add_plugin (${PROJECT_NAME}
     TARGETS vst2 vst3 lv2 clap ${TARGET_JACK}
@@ -35,6 +40,7 @@ dpf_add_plugin (${PROJECT_NAME}
         src/subwindows/MessageBoxStuff.cpp
         widgets/dpf-imgui/DearImGui.cpp
         widgets/imgui-knobs-mod/imgui-knobs.cpp
+        ${FONT_FILES}
 )
 
 # DistrhoPluginInfo.h must be findable by the DPF internal headers
