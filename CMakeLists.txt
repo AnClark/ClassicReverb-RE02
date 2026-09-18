@@ -27,7 +27,7 @@ set (FONT_FILES
 )
 
 dpf_add_plugin (${PROJECT_NAME}
-    TARGETS vst2 vst3 lv2 clap ${TARGET_JACK}
+    TARGETS vst2 vst3 clap ${TARGET_JACK}
     FILES_DSP
         src/Plugin.cpp
         src/DSP.cpp
