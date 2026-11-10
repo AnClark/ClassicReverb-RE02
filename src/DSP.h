@@ -4,6 +4,9 @@
 #include <cstdint>
 #include "Definitions.h"
 #include "Constants.h"
+#if CLASSIC_REVERB_SILENCE_GATE
+#include "SilenceGate.h"
+#endif // CLASSIC_REVERB_SILENCE_GATE
 
 using namespace ClassicReverbConsts;
 
@@ -48,6 +51,15 @@ struct ClassicReverbState {
 class ClassicReverb
 {
     ClassicReverbState g_state; // Global reverb state for each DSP instance
+
+#if CLASSIC_REVERB_SILENCE_GATE
+    // Silence gate: once the raw input and the PRE-wet reverb output have both
+    // been inaudible for 0.5 s, processReplacing() early-outs sample by sample.
+    // On the sample where it arms, it invokes a callback that clears the whole
+    // tank plus every IIR state so the early-out starts from a truly empty
+    // state (and no denormal residue keeps circulating).
+    SilenceGate fSilenceGate;
+#endif // CLASSIC_REVERB_SILENCE_GATE
 
 public:
     ClassicReverb(float sampleRate);

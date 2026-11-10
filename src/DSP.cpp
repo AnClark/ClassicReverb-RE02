@@ -344,6 +344,24 @@ void ClassicReverb::processSample(float inL, float inR, float* outL, float* outR
     *outL = rawL;
     *outR = rawR;
 #endif
+
+#if CLASSIC_REVERB_SILENCE_GATE
+    // Feed the gate the raw input plus the PRE-wet reverb output
+    // (wetL/wetR + earlyL/earlyR are taken before the Mix/Level gains, so a
+    // MIX=0 or Level=0 setting cannot mask a still-ringing tank).  The
+    // function returns void: on the sample where the gate arms it invokes
+    // clearBufferCallback, which clears the whole tank plus every IIR state
+    // so the early-out starts from a clean state.
+    fSilenceGate.updateInputSignal(inL, inR, wetL + earlyL, wetR + earlyR,
+                                   g_state.sampleRate, [this]() {
+        resetBuffer();
+        std::memset(g_state.earlyState,    0, sizeof(g_state.earlyState));
+        std::memset(g_state.combState,     0, sizeof(g_state.combState));
+        std::memset(g_state.allpassState,  0, sizeof(g_state.allpassState));
+        std::memset(g_state.loCutStateIn,  0, sizeof(g_state.loCutStateIn));
+        std::memset(g_state.loCutStateOut, 0, sizeof(g_state.loCutStateOut));
+    });
+#endif // CLASSIC_REVERB_SILENCE_GATE
 }
 
 void ClassicReverb::processReplacing(const float** inputs, float** outputs, uint32_t sampleFrames)
@@ -354,6 +372,12 @@ void ClassicReverb::processReplacing(const float** inputs, float** outputs, uint
     float* outR = outputs[1];
     
     for (int32_t i = 0; i < sampleFrames; i++) {
+#if CLASSIC_REVERB_SILENCE_GATE
+        if (fSilenceGate.shouldSkipProcessing(inL[i], inR[i])) {
+            outL[i] = outR[i] = 0.0f;
+            continue;
+        }
+#endif // CLASSIC_REVERB_SILENCE_GATE
         processSample(inL[i], inR[i], &outL[i], &outR[i]);
     }
 }

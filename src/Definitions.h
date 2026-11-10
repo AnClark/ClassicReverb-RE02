@@ -29,4 +29,10 @@ constexpr DISTRHO::ParameterRanges kParamRanges[kNumParams] = {
     {   0.0f, -10.0f,  10.0f    },   // Level, dB
 };
 
+// Set to 1 to apply silence gate on DSP processing.
+// Silence gate skips processing when input signal is considered inaudible
+// (lower than the thresholds defined in SilenceGate.h), preventing unnecessary
+// CPU usage on idle.
+#define CLASSIC_REVERB_SILENCE_GATE 1
+
 #endif // CLASSIC_REVERB_DEFINITIONS_H
